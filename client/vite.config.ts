@@ -1,8 +1,8 @@
-// LiveLink/client/vite.config.js
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import fs from 'fs' 
-import path from 'path'
+// client/vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import fs from 'fs'; 
+import path from 'path';
 
 export default defineConfig({
   plugins: [
@@ -10,7 +10,6 @@ export default defineConfig({
   ],
   server: {
     host: true, 
-
     https: {
       key: fs.readFileSync(path.resolve(__dirname, '../server/localhost+1-key.pem')),
       cert: fs.readFileSync(path.resolve(__dirname, '../server/localhost+1.pem')),
@@ -24,4 +23,4 @@ export default defineConfig({
       }
     }
   }
-})
+});

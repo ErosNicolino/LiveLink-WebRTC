@@ -1,24 +1,26 @@
-// LiveLink/client/src/pages/Emissor.jsx
+// LiveLink/client/src/pages/Emissor.tsx
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
 
-function Emissor() {
-  const socket = useSocket();
-  const videoRef = useRef(null);
-  const [status, setStatus] = useState('Pronto para conectar');
-  const [estaConectado, setEstaConectado] = useState(false);
-  const [usandoCameraFrontal, setUsandoCameraFrontal] = useState(true);
+const Emissor: React.FC = () => {
+  const socket = useSocket(); 
   
-  const [videoEstaAtivo, setVideoEstaAtivo] = useState(true); 
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [status, setStatus] = useState<string>('Pronto para conectar');
+  const [estaConectado, setEstaConectado] = useState<boolean>(false);
+  const [usandoCameraFrontal, setUsandoCameraFrontal] = useState<boolean>(true);
+  const [videoEstaAtivo, setVideoEstaAtivo] = useState<boolean>(true); 
   
-  const peerConnectionRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const videoSenderRef = useRef(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   
-  const videoTrackRef = useRef(null); 
+  const localStreamRef = useRef<MediaStream | null>(null);
+  
+  const videoSenderRef = useRef<RTCRtpSender | null>(null); 
+  
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null); 
 
-  const fecharConexao = useCallback((resetStatus = true) => {
+  const fecharConexao = useCallback((resetStatus: boolean = true) => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
@@ -31,13 +33,13 @@ function Emissor() {
       videoRef.current.srcObject = null;
     }
     videoSenderRef.current = null;
-    videoTrackRef.current = null; 
+    videoTrackRef.current = null;
     setEstaConectado(false);
     setVideoEstaAtivo(true);
     if (resetStatus) setStatus('Desconectado. Pronto para reconectar.');
   }, []);
 
-  const trocarCamera = useCallback(async (isFrontal) => {
+  const trocarCamera = useCallback(async (isFrontal: boolean) => {
     if (!peerConnectionRef.current || !videoSenderRef.current || !localStreamRef.current) {
       console.log("Ainda não conectado, não é possível trocar a câmera.");
       return;
@@ -49,13 +51,13 @@ function Emissor() {
         video: {
           facingMode: isFrontal ? 'user' : 'environment',
           height: { ideal: 1080 },
-          frameRate: {ideal: 30, max: 60}
+          frameRate: { ideal: 30 }
         },
         audio: false
       });
-      const newVideoTrack = newStream.getVideoTracks()[0];
+      const newVideoTrack: MediaStreamTrack = newStream.getVideoTracks()[0];
 
-      await videoSenderRef.current.replaceTrack(newVideoTrack);
+      await videoSenderRef.current!.replaceTrack(newVideoTrack);
       
       localStreamRef.current.getVideoTracks().forEach(track => track.stop());
       
@@ -65,12 +67,13 @@ function Emissor() {
         videoRef.current.srcObject = newLocalStream;
       }
       localStreamRef.current = newLocalStream;
-      videoTrackRef.current = newVideoTrack; 
+      
+      videoTrackRef.current = newVideoTrack;
       videoTrackRef.current.enabled = videoEstaAtivo; 
       
       setStatus(isFrontal ? 'Usando Câmera Frontal' : 'Usando Câmera Traseira');
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao trocar câmera:", err);
       let mensagemErro = `Erro ao trocar: ${err.message}`;
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -82,12 +85,12 @@ function Emissor() {
     }
   }, [videoEstaAtivo]);
 
-  const iniciarConexao = useCallback(async (isFrontal) => {
+  const iniciarConexao = useCallback(async (isFrontal: boolean) => {
     fecharConexao(false);
 
     try {
       setStatus('1. Pedindo permissão da câmera...');
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: isFrontal ? 'user' : 'environment',
           height: { ideal: 1080 },
@@ -104,7 +107,7 @@ function Emissor() {
       
       setStatus('2. Câmera OK. Criando conexão...');
 
-      const servers = {
+      const servers: RTCConfiguration = {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           {
@@ -117,14 +120,14 @@ function Emissor() {
 
       peerConnectionRef.current = new RTCPeerConnection(servers);
 
-      stream.getTracks().forEach((track) => {
-        const sender = peerConnectionRef.current.addTrack(track, stream);
+      stream.getTracks().forEach((track: MediaStreamTrack) => {
+        const sender: RTCRtpSender = peerConnectionRef.current!.addTrack(track, stream);
         if (track.kind === 'video') {
           videoSenderRef.current = sender;
         }
       });
 
-      peerConnectionRef.current.onicecandidate = (event) => {
+      peerConnectionRef.current.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
         if (event.candidate) {
           socket.emit('ice-candidate', event.candidate);
         }
@@ -141,13 +144,13 @@ function Emissor() {
         }
       };
 
-      const offer = await peerConnectionRef.current.createOffer();
+      const offer: RTCSessionDescriptionInit = await peerConnectionRef.current.createOffer();
       await peerConnectionRef.current.setLocalDescription(offer);
 
       setStatus('3. Enviando oferta para o PC...');
       socket.emit('offer', offer);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro no Emissor:", err);
       let mensagemErro = `Erro: ${err.message}`;
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -163,14 +166,11 @@ function Emissor() {
   }, [fecharConexao, socket]);
 
   useEffect(() => {
-  }, [usandoCameraFrontal, estaConectado, trocarCamera]);
-
-  useEffect(() => {
     if (!socket) return;
     
     console.log("Configurando ouvintes do socket Emissor...");
     
-    const onAnswerReceived = async (answer) => {
+    const onAnswerReceived = async (answer: RTCSessionDescriptionInit) => {
       if (peerConnectionRef.current && peerConnectionRef.current.signalingState === 'have-local-offer') {
         try {
           await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
@@ -181,7 +181,7 @@ function Emissor() {
       }
     };
 
-    const onIceCandidateReceived = (candidate) => {
+    const onIceCandidateReceived = (candidate: RTCIceCandidateInit) => {
       if (peerConnectionRef.current && peerConnectionRef.current.signalingState !== 'closed') {
         try {
           peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -231,8 +231,8 @@ function Emissor() {
   const handleToggleVideo = () => {
     if (videoTrackRef.current) {
       const novoEstadoAtivo = !videoEstaAtivo;
-      videoTrackRef.current.enabled = novoEstadoAtivo; 
-      setVideoEstaAtivo(novoEstadoAtivo); 
+      videoTrackRef.current.enabled = novoEstadoAtivo;
+      setVideoEstaAtivo(novoEstadoAtivo);
       setStatus(novoEstadoAtivo ? (usandoCameraFrontal ? 'Usando Câmera Frontal' : 'Usando Câmera Traseira') : 'Câmera Pausada');
     }
   };

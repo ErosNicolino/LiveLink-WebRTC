@@ -1,11 +1,12 @@
-// LiveLink/client/src/App.jsx
+// LiveLink/client/src/App.tsx
+
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Emissor from './pages/Emissor';
 import Receptor from './pages/Receptor';
-import './App.css';
+import './App.css'; 
 
-function App() {
+const App: React.FC = () => {
   return (
     <div className="App">
       <Routes>
