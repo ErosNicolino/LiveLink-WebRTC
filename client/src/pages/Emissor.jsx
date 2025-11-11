@@ -49,7 +49,7 @@ function Emissor() {
         video: {
           facingMode: isFrontal ? 'user' : 'environment',
           height: { ideal: 1080 },
-          frameRate: { ideal: 30 }
+          frameRate: {ideal: 30, max: 60}
         },
         audio: false
       });
