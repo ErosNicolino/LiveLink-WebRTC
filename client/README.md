@@ -94,7 +94,7 @@ LiveLink/
 ### 1. Clonar o Repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/LiveLink.git
+git clone https://github.com/ErosNicolino/LiveLink-WebRTC
 cd LiveLink
 ```
 
